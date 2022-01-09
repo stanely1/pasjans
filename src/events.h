@@ -104,22 +104,26 @@ void drag_on_main(GtkWidget *target, GtkWidget *fixed, int src_y)
         main_grid[src_ind_x][src_ind_y+i] = NULL;
         main_grid[targ_ind_x][++main_grid_stack_size[targ_ind_x]] = src_field;
 
+        GtkWidget *tmp_widget = g_object_ref(src_field->widget);
         gtk_container_remove(GTK_CONTAINER(fixed),src_field->widget);
-        gtk_fixed_put(GTK_FIXED(fixed),src_field->widget,
+        gtk_fixed_put(GTK_FIXED(fixed),tmp_widget,
         targ_ind_x*(GAP_SIZE+CARD_WIDTH), MAIN_GRID_START_Y+(main_grid_stack_size[targ_ind_x]-1)*GAP_SIZE);
+       // gtk_widget_show(src_field->widget);
 
     }
     main_grid_stack_size[src_ind_x] = src_ind_y-1;
 
-    if(main_grid_stack_size[src_ind_x] > 0)
+    if(main_grid[src_ind_x][main_grid_stack_size[src_ind_x]]->locked)
     {
         Field *unlocked = main_grid[src_ind_x][main_grid_stack_size[src_ind_x]];
+        unlocked->locked = FALSE;
 
         gtk_widget_destroy(unlocked->widget);
         unlocked->widget = unlocked->card->image;
 
         make_draggable(unlocked);
 
+        gtk_container_remove(GTK_CONTAINER(fixed),unlocked->widget);
         gtk_fixed_put(GTK_FIXED(fixed),unlocked->widget,src_x,src_y-GAP_SIZE);
         gtk_widget_show_all(unlocked->widget);
     }

@@ -24,8 +24,11 @@ void random_shuffle(int n, Card t[])
 
 void clear_game()
 {
-   return;// for(int i = )
+    for(int i = 0; i < MAIN_GRID_SIZE_X; i++)
+        for(int j = 0; j < MAIN_GRID_SIZE_Y; j++)
+            main_grid[i][j] = NULL;
 }
+
 void new_game_init()
 {
     clear_game();
@@ -60,6 +63,7 @@ void new_game_init()
 
         main_grid[i][0] = malloc(sizeof(Field));
 
+        main_grid[i][0]->locked = FALSE;
         main_grid[i][0]->card = NULL;
         main_grid[i][0]->widget = gtk_frame_new(NULL);
 
@@ -78,9 +82,10 @@ void new_game_init()
         for(int j = 1; j <= i+1; j++)
         {
             main_grid[i][j] = malloc(sizeof(Field));
+            main_grid[i][j]->locked = i+1 != j;
             main_grid[i][j]->card = cards+current_ind;
 
-            if(i+1 != j)
+            if(main_grid[i][j]->locked)
             {
                 pixbuf = gdk_pixbuf_new_from_file_at_scale("images/zback_blue.svg",CARD_WIDTH,CARD_HEIGHT,TRUE,NULL);
                 main_grid[i][j]->widget = gtk_image_new_from_pixbuf(pixbuf);
