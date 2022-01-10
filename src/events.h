@@ -3,6 +3,8 @@
 
 #include <gtk/gtk.h>
 #include "cards.h"
+#include "widgets.h"
+#include "stack.h"
 
 GtkTargetEntry targets[1] = {"dummy",GTK_TARGET_SAME_APP,1};
 
@@ -12,9 +14,12 @@ void drag_drop(GtkWidget *source, gpointer data);
 
 //specific
 void drag_on_main(GtkWidget *target, GtkWidget *fixed, int src_y);
-void drag_from_main_to_dest(GtkWidget *target, GtkWidget *fixed);
+void drag_from_main_to_dest(GtkWidget *target, GtkWidget *fixed, int src_y);
 void drag_from_stack_to_main(GtkWidget *target, GtkWidget *fixed);
 void drag_on_stacks(GtkWidget *target, GtkWidget *fixed);
+
+void covered_card_click(GtkWidget *widget, gpointer data);
+void covered_base_click(GtkWidget *widget, gpointer data);
 
 //*******************************************************************************//
 
@@ -41,7 +46,7 @@ void drag_drop(GtkWidget *target, gpointer data)
 
     if(     src_y == 0 && targ_y == 0) drag_on_stacks(target,fixed);
     else if(src_y == 0 && targ_y  > 0) drag_from_stack_to_main(target,fixed);
-    else if(src_y  > 0 && targ_y == 0) drag_from_main_to_dest(target,fixed);
+    else if(src_y  > 0 && targ_y == 0) drag_from_main_to_dest(target,fixed,src_y);
     else if(src_y  > 0 && targ_y  > 0) drag_on_main(target,fixed,src_y);
 }
 
@@ -55,7 +60,7 @@ gboolean check_on_main(Field *source, Field *target)
 
 gboolean check_on_stack(Field *source, Field *target)
 {
-    if(target->card == NULL) return !strcmp(source->card->type,"ace"); // na dol idzie as
+    if(target == NULL) return !strcmp(source->card->type,"ace"); // na dol idzie as
     return !strcmp(source->card->sign, target->card->sign) && (source->card->type_hierarchy+1 == target->card->type_hierarchy);
     // ten sam znak i roznica hierarchii typów = 1
 }
@@ -75,17 +80,34 @@ void make_draggable(Field *field)
     g_signal_connect(G_OBJECT(field->widget),"drag-drop",G_CALLBACK(drag_drop),NULL);
 }
 
+//unlock card
+void unlock(Field *field, int x, int y)
+{
+    field->locked = FALSE;
+
+    gtk_widget_destroy(field->widget);
+    field->widget = field->card->image;
+
+    make_draggable(field);
+
+    gtk_container_remove(GTK_CONTAINER(main_fixed),field->widget);
+    gtk_fixed_put(GTK_FIXED(main_fixed),field->widget,x,y);
+    gtk_widget_show_all(field->widget);
+}
+
 // spcefific functions definition:}
+#define get_src_targ_x     GValue gvy = G_VALUE_INIT; \
+    g_value_init(&gvy,G_TYPE_INT);\
+\
+    gtk_container_child_get_property(GTK_CONTAINER(fixed),drag_source,"x",&gvy);\
+    int src_x = g_value_get_int(&gvy);\
+\
+    gtk_container_child_get_property(GTK_CONTAINER(fixed),target,"x",&gvy);\
+    int targ_x = g_value_get_int(&gvy);
+
 void drag_on_main(GtkWidget *target, GtkWidget *fixed, int src_y)
 {
-    GValue gvy = G_VALUE_INIT;
-    g_value_init(&gvy,G_TYPE_INT);
-
-    gtk_container_child_get_property(GTK_CONTAINER(fixed),drag_source,"x",&gvy);
-    int src_x = g_value_get_int(&gvy);
-
-    gtk_container_child_get_property(GTK_CONTAINER(fixed),target,"x",&gvy);
-    int targ_x = g_value_get_int(&gvy);
+    get_src_targ_x;
 
     int src_ind_x  = src_x/(GAP_SIZE+CARD_WIDTH);
     int src_ind_y  = (src_y-MAIN_GRID_START_Y)/GAP_SIZE + 1;
@@ -113,35 +135,99 @@ void drag_on_main(GtkWidget *target, GtkWidget *fixed, int src_y)
     }
     main_grid_stack_size[src_ind_x] = src_ind_y-1;
 
-    if(main_grid[src_ind_x][main_grid_stack_size[src_ind_x]]->locked)
-    {
-        Field *unlocked = main_grid[src_ind_x][main_grid_stack_size[src_ind_x]];
-        unlocked->locked = FALSE;
-
-        gtk_widget_destroy(unlocked->widget);
-        unlocked->widget = unlocked->card->image;
-
-        make_draggable(unlocked);
-
-        gtk_container_remove(GTK_CONTAINER(fixed),unlocked->widget);
-        gtk_fixed_put(GTK_FIXED(fixed),unlocked->widget,src_x,src_y-GAP_SIZE);
-        gtk_widget_show_all(unlocked->widget);
-    }
+    if(main_grid[src_ind_x][main_grid_stack_size[src_ind_x]]->locked) 
+        unlock(main_grid[src_ind_x][main_grid_stack_size[src_ind_x]],src_x,src_y-GAP_SIZE);
 }
 
-void drag_from_main_to_dest(GtkWidget *target, GtkWidget *fixed)
+void drag_from_main_to_dest(GtkWidget *target, GtkWidget *fixed, int src_y)
 {
-    return;
+    get_src_targ_x
+
+    int src_ind_x  = src_x/(GAP_SIZE+CARD_WIDTH);
+    int src_ind_y  = (src_y-MAIN_GRID_START_Y)/GAP_SIZE + 1;
+
+    if(src_ind_y != main_grid_stack_size[src_ind_x]) return; // src nie jest gornym elementem
+
+    int targ_stack_ind = targ_x/(GAP_SIZE+CARD_WIDTH)-3;
+
+    Field *src_field = main_grid[src_ind_x][src_ind_y];
+    Field *targ_field = stack_top(dest_stack[targ_stack_ind]);
+
+    if(!check_on_stack(src_field,targ_field)) return;
+
+    //wlasciwa akcja
+    if(targ_field != NULL) gtk_widget_hide(targ_field->widget);
+
+    stack_insert(&dest_stack[targ_stack_ind],src_field);
+    gtk_fixed_move(GTK_FIXED(fixed),src_field->widget,targ_x,0);
+
+    main_grid[src_ind_x][src_ind_y] = NULL;
+    main_grid_stack_size[src_ind_x]--;
+    
+    if(main_grid[src_ind_x][src_ind_y-1]->locked) 
+        unlock(main_grid[src_ind_x][src_ind_y-1],src_x,src_y-GAP_SIZE);
 }
 
 void drag_from_stack_to_main(GtkWidget *target, GtkWidget *fixed)
 {
-    return;
+    get_src_targ_x
+
+    int src_ind_x  = src_x/(GAP_SIZE+CARD_WIDTH);
+    int targ_ind_x = targ_x/(GAP_SIZE+CARD_WIDTH);
+
+    Stack **src_stack = src_ind_x == 1 ? &uncovered_stack : &dest_stack[src_ind_x-3];
+
+    Field *src_field = stack_pop(src_stack);
+    Field *targ_field = main_grid[targ_ind_x][main_grid_stack_size[targ_ind_x]];
+
+    if(!check_on_main(src_field,targ_field)) return;
+
+    if(!stack_is_empty(*src_stack))
+    {
+        Field *top = stack_top(*src_stack);
+        gtk_widget_show_all(top->widget);
+    }
+
+    GtkWidget *tmp_widget = g_object_ref(src_field->widget);
+    gtk_container_remove(GTK_CONTAINER(fixed),src_field->widget);
+    gtk_fixed_put(GTK_FIXED(fixed),tmp_widget,targ_x,MAIN_GRID_START_Y+(main_grid_stack_size[targ_ind_x])*GAP_SIZE);
+    
+    gtk_drag_dest_set(tmp_widget,GTK_DEST_DEFAULT_ALL,targets,1,GDK_ACTION_COPY);
+    g_signal_connect(G_OBJECT(tmp_widget),"drag-drop",G_CALLBACK(drag_drop),NULL);
+
+    main_grid[targ_ind_x][++main_grid_stack_size[targ_ind_x]] = src_field;
 }
 
 void drag_on_stacks(GtkWidget *target, GtkWidget *fixed)
 {
     return;
+}
+
+void covered_card_click(GtkWidget *widget, gpointer data)
+{
+    if(stack_is_empty(covered_stack)) return;
+
+    Field *covered_top = stack_pop(&covered_stack);
+    Field *uncovered_top = stack_top(uncovered_stack);
+
+    if(uncovered_top != NULL) gtk_widget_hide(uncovered_top->widget);
+    
+    stack_insert(&uncovered_stack,covered_top);
+    gtk_widget_show_all(covered_top->widget);
+
+    if(stack_is_empty(covered_stack)) gtk_widget_hide(covered_stack_card);
+}
+
+void covered_base_click(GtkWidget *widget, gpointer data)
+{
+    if(stack_is_empty(uncovered_stack)) return;
+
+    Field *top = stack_top(uncovered_stack);
+    gtk_widget_hide(top->widget);
+
+    while(!stack_is_empty(uncovered_stack)) stack_insert(&covered_stack,stack_pop(&uncovered_stack));
+
+    if(!stack_is_empty(covered_stack)) gtk_widget_show_all(covered_stack_card);
 }
 
 #endif

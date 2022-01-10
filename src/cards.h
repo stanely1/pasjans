@@ -5,6 +5,7 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <stdio.h>
 #include <string.h>
+#include "stack.h"
 
 #define CARD_WIDTH 114
 #define CARD_HEIGHT 166
@@ -33,6 +34,8 @@ Field *main_grid[MAIN_GRID_SIZE_X][MAIN_GRID_SIZE_Y];
 int main_grid_stack_size[MAIN_GRID_SIZE_X];
 
 Card cards[CARD_COUNT];
+
+Stack *covered_stack, *uncovered_stack, *dest_stack[4];
 
 char *card_type_hierarchy[13] = {"king","queen","jack","10","9","8","7","6","5","4","3","2","ace"};
 
