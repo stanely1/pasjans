@@ -90,9 +90,10 @@ void unlock(Field *field, int x, int y)
 
     make_draggable(field);
 
+    GtkWidget *tmp_widget = g_object_ref(field->widget);
     gtk_container_remove(GTK_CONTAINER(main_fixed),field->widget);
-    gtk_fixed_put(GTK_FIXED(main_fixed),field->widget,x,y);
-    gtk_widget_show_all(field->widget);
+    gtk_fixed_put(GTK_FIXED(main_fixed),tmp_widget,x,y);
+    gtk_widget_show_all(tmp_widget);
 }
 
 // spcefific functions definition:}
@@ -177,11 +178,12 @@ void drag_from_stack_to_main(GtkWidget *target, GtkWidget *fixed)
 
     Stack **src_stack = src_ind_x == 1 ? &uncovered_stack : &dest_stack[src_ind_x-3];
 
-    Field *src_field = stack_pop(src_stack);
+    Field *src_field = stack_top(*src_stack);
     Field *targ_field = main_grid[targ_ind_x][main_grid_stack_size[targ_ind_x]];
 
     if(!check_on_main(src_field,targ_field)) return;
 
+    stack_pop(src_stack);
     if(!stack_is_empty(*src_stack))
     {
         Field *top = stack_top(*src_stack);

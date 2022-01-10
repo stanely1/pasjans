@@ -66,7 +66,7 @@ void new_game_init()
     while(current_ind < CARD_COUNT)
     {
         Field *field = malloc(sizeof(Field));
-        field->locked = TRUE;
+        field->locked = FALSE;
         field->card = cards+current_ind; current_ind++;
 
         field->widget = gtk_event_box_new();
