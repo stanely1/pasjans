@@ -89,9 +89,9 @@ void main_window_init()
    // gtk_window_set_resizable(GTK_WINDOW(main_window),FALSE);
     gtk_container_set_border_width(GTK_CONTAINER(main_window),GAP_SIZE);
     
-    GdkColor color;
-    color.red = 120, color.green = 20125, color.blue = 812;
-    gtk_widget_modify_bg(main_window,GTK_STATE_NORMAL,&color);
+    GdkColor bg_color = {.red = 120, .green = 20125, .blue = 812};
+    GdkColor frame_color = {.red = 120, .green = 25565, .blue = 812};
+    gtk_widget_modify_bg(main_window,GTK_STATE_NORMAL,&bg_color);
 
     g_signal_connect(G_OBJECT(main_window),"destroy",G_CALLBACK(gtk_main_quit),NULL);
     // *******
@@ -118,7 +118,7 @@ void main_window_init()
 
         main_grid[i][0]->locked = FALSE;
         main_grid[i][0]->card = NULL;
-        main_grid[i][0]->widget = gtk_frame_new(NULL);
+        main_grid[i][0]->widget = gtk_label_new(NULL);
 
         gtk_widget_set_size_request(main_grid[i][0]->widget,CARD_WIDTH,CARD_HEIGHT);
         gtk_drag_dest_set(main_grid[i][0]->widget,GTK_DEST_DEFAULT_ALL,targets,1,GDK_ACTION_COPY);
@@ -126,15 +126,17 @@ void main_window_init()
         
         //gtk_container_add(GTK_CONTAINER(main_grid[i][0]->widget),gtk_frame_new("dupa"));
         gtk_fixed_put(GTK_FIXED(main_fixed),main_grid[i][0]->widget,i*(GAP_SIZE+CARD_WIDTH),MAIN_GRID_START_Y);
+        gtk_widget_modify_bg(main_grid[i][0]->widget,GTK_STATE_NORMAL,&frame_color);
     }
     //***
 
     //kupka do dobierania
     covered_stack_base = gtk_event_box_new();
-    gtk_container_add(GTK_CONTAINER(covered_stack_base),gtk_frame_new(NULL));
+    //gtk_container_add(GTK_CONTAINER(covered_stack_base),gtk_frame_new(NULL));
     gtk_widget_set_size_request(covered_stack_base,CARD_WIDTH,CARD_HEIGHT);
     g_signal_connect(G_OBJECT(covered_stack_base),"button-press-event",G_CALLBACK(covered_base_click),NULL);
     gtk_fixed_put(GTK_FIXED(main_fixed),covered_stack_base,0,0);
+    gtk_widget_modify_bg(covered_stack_base,GTK_STATE_NORMAL,&frame_color);
 
     GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file_at_scale("images/zback_blue.svg",CARD_WIDTH,CARD_HEIGHT,TRUE,NULL);
     covered_stack_card = gtk_event_box_new();
@@ -142,19 +144,21 @@ void main_window_init()
     g_signal_connect(G_OBJECT(covered_stack_card),"button-press-event",G_CALLBACK(covered_card_click),NULL);
     gtk_fixed_put(GTK_FIXED(main_fixed),covered_stack_card,0,0);
 
-    uncovered_stack_base = gtk_frame_new(NULL);
+    uncovered_stack_base = gtk_label_new(NULL);
     gtk_widget_set_size_request(uncovered_stack_base,CARD_WIDTH,CARD_HEIGHT);
     gtk_fixed_put(GTK_FIXED(main_fixed),uncovered_stack_base,CARD_WIDTH+GAP_SIZE,0);
+    gtk_widget_modify_bg(uncovered_stack_base,GTK_STATE_NORMAL,&frame_color);
     //***
 
     //dest
     for(int i = 0; i < 4; i++)
     {
-        dest_stack_base[i] = gtk_frame_new(NULL);
+        dest_stack_base[i] = gtk_label_new(NULL);
         gtk_widget_set_size_request(dest_stack_base[i],CARD_WIDTH,CARD_HEIGHT);
         gtk_drag_dest_set(dest_stack_base[i],GTK_DEST_DEFAULT_ALL,targets,1,GDK_ACTION_COPY);
         g_signal_connect(G_OBJECT(dest_stack_base[i]),"drag-drop",G_CALLBACK(drag_drop),NULL);
         gtk_fixed_put(GTK_FIXED(main_fixed),dest_stack_base[i],(MAIN_GRID_SIZE_X-4+i)*(GAP_SIZE+CARD_WIDTH),0);
+        gtk_widget_modify_bg(dest_stack_base[i],GTK_STATE_NORMAL,&frame_color);
     }
     //****
 
