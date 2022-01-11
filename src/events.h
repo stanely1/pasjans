@@ -97,12 +97,11 @@ void unlock(Field *field, int x, int y)
 }
 
 // spcefific functions definition:}
-#define get_src_targ_x     GValue gvy = G_VALUE_INIT; \
+#define get_src_targ_x \
+    GValue gvy = G_VALUE_INIT; \
     g_value_init(&gvy,G_TYPE_INT);\
-\
     gtk_container_child_get_property(GTK_CONTAINER(fixed),drag_source,"x",&gvy);\
     int src_x = g_value_get_int(&gvy);\
-\
     gtk_container_child_get_property(GTK_CONTAINER(fixed),target,"x",&gvy);\
     int targ_x = g_value_get_int(&gvy);
 
@@ -183,6 +182,7 @@ void drag_from_stack_to_main(GtkWidget *target, GtkWidget *fixed)
 
     if(!check_on_main(src_field,targ_field)) return;
 
+    //wlasciwa akcja
     stack_pop(src_stack);
     if(!stack_is_empty(*src_stack))
     {
@@ -194,15 +194,44 @@ void drag_from_stack_to_main(GtkWidget *target, GtkWidget *fixed)
     gtk_container_remove(GTK_CONTAINER(fixed),src_field->widget);
     gtk_fixed_put(GTK_FIXED(fixed),tmp_widget,targ_x,MAIN_GRID_START_Y+(main_grid_stack_size[targ_ind_x])*GAP_SIZE);
     
-    gtk_drag_dest_set(tmp_widget,GTK_DEST_DEFAULT_ALL,targets,1,GDK_ACTION_COPY);
-    g_signal_connect(G_OBJECT(tmp_widget),"drag-drop",G_CALLBACK(drag_drop),NULL);
+    if(src_ind_x == 1)
+        gtk_drag_dest_set(tmp_widget,GTK_DEST_DEFAULT_ALL,targets,1,GDK_ACTION_COPY),
+        g_signal_connect(G_OBJECT(tmp_widget),"drag-drop",G_CALLBACK(drag_drop),NULL);
 
     main_grid[targ_ind_x][++main_grid_stack_size[targ_ind_x]] = src_field;
 }
 
 void drag_on_stacks(GtkWidget *target, GtkWidget *fixed)
 {
-    return;
+    get_src_targ_x
+
+    int src_ind_x  = src_x/(GAP_SIZE+CARD_WIDTH);
+    int targ_ind_x = targ_x/(GAP_SIZE+CARD_WIDTH);
+
+    Stack **src_stack = src_ind_x == 1 ? &uncovered_stack : &dest_stack[src_ind_x-3];
+    Stack **targ_stack = &dest_stack[targ_ind_x-3];
+
+    Field *src_field = stack_top(*src_stack);
+    Field *targ_field = stack_top(*targ_stack);
+
+    if(!check_on_stack(src_field,targ_field)) return;
+
+    //wlasciwa akcja
+    stack_pop(src_stack);
+    if(!stack_is_empty(*src_stack))
+    {
+        Field *top = stack_top(*src_stack);
+        gtk_widget_show_all(top->widget);
+    }
+
+    if(targ_field != NULL) gtk_widget_hide(targ_field->widget);
+
+    stack_insert(targ_stack,src_field);
+    gtk_fixed_move(GTK_FIXED(fixed),src_field->widget,targ_x,0);
+
+    if(src_ind_x == 1)
+        gtk_drag_dest_set(src_field->widget,GTK_DEST_DEFAULT_ALL,targets,1,GDK_ACTION_COPY),
+        g_signal_connect(G_OBJECT(src_field->widget),"drag-drop",G_CALLBACK(drag_drop),NULL);
 }
 
 void covered_card_click(GtkWidget *widget, gpointer data)
