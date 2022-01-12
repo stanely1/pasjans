@@ -27,7 +27,7 @@ typedef struct {
     GtkWidget *widget;
     Card *card;
     gboolean locked;
-    //gboolean is_base; // czy jest to pole bazowe (puste na dnie stosu)
+   //gboolean is_base; // czy jest to pole bazowe (puste na dnie stosu)
 } Field;
 
 Field *main_grid[MAIN_GRID_SIZE_X][MAIN_GRID_SIZE_Y];
@@ -48,7 +48,7 @@ void cards_init()
         fscanf(card_inp,"%s",cards[i].sign);
         fscanf(card_inp,"%s",cards[i].type);
 
-        char filename[100];
+        char filename[30];
         fscanf(card_inp,"%s",filename);
 
         GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file_at_scale(filename,CARD_WIDTH,CARD_HEIGHT,TRUE,NULL);

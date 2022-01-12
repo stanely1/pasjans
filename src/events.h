@@ -68,11 +68,6 @@ gboolean check_on_stack(Field *source, Field *target)
 //make card draggable
 void make_draggable(Field *field)
 {
-    GtkWidget *drag_event_box = gtk_event_box_new();
-    gtk_container_add(GTK_CONTAINER(drag_event_box),field->widget);
-
-    field->widget = drag_event_box;
-
     gtk_drag_source_set(field->widget,GDK_BUTTON1_MASK,targets,1,GDK_ACTION_COPY);
     gtk_drag_dest_set(field->widget,GTK_DEST_DEFAULT_ALL,targets,1,GDK_ACTION_COPY);
 
@@ -85,8 +80,8 @@ void unlock(Field *field, int x, int y)
 {
     field->locked = FALSE;
 
-    gtk_widget_destroy(field->widget);
-    field->widget = field->card->image;
+    gtk_container_foreach(GTK_CONTAINER(field->widget),(void*)gtk_widget_destroy,NULL);
+    gtk_container_add(GTK_CONTAINER(field->widget),field->card->image);
 
     make_draggable(field);
 
@@ -130,8 +125,6 @@ void drag_on_main(GtkWidget *target, GtkWidget *fixed, int src_y)
         gtk_container_remove(GTK_CONTAINER(fixed),src_field->widget);
         gtk_fixed_put(GTK_FIXED(fixed),tmp_widget,
         targ_ind_x*(GAP_SIZE+CARD_WIDTH), MAIN_GRID_START_Y+(main_grid_stack_size[targ_ind_x]-1)*GAP_SIZE);
-       // gtk_widget_show(src_field->widget);
-
     }
     main_grid_stack_size[src_ind_x] = src_ind_y-1;
 

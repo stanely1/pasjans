@@ -9,5 +9,6 @@ GtkWidget *covered_stack_card;
 GtkWidget *covered_stack_base;
 GtkWidget *uncovered_stack_base;
 GtkWidget *dest_stack_base[4];
+GtkWidget *menubar;
 
 #endif
