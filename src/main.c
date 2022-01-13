@@ -115,11 +115,16 @@ void main_window_init()
 
     //menubar
     menubar = gtk_menu_bar_new();
-    g_object_set(menubar,"halign",GTK_ALIGN_START,"valign",GTK_ALIGN_START,NULL);
 
     GtkWidget *new_game_menu_item = gtk_menu_item_new_with_label("Nowa gra");
     g_signal_connect(G_OBJECT(new_game_menu_item),"activate",G_CALLBACK(new_game_init),NULL);
     gtk_menu_shell_append(GTK_MENU_SHELL(menubar),new_game_menu_item);
+
+    GtkWidget *preferences_menu_item = gtk_menu_item_new_with_label("Preferencje");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menubar),preferences_menu_item);
+
+    GtkWidget *stats_menu_item = gtk_menu_item_new_with_label("Statystyki");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menubar),stats_menu_item);
 
     gtk_box_pack_start(GTK_BOX(main_vbox),menubar,FALSE,TRUE,0);
     //*******************
@@ -131,7 +136,7 @@ void main_window_init()
     //fixed
     gtk_overlay_add_overlay(GTK_OVERLAY(main_overlay),main_fixed);
     g_object_set(main_fixed,"halign",GTK_ALIGN_CENTER,"valign",GTK_ALIGN_START,NULL);
-    gtk_box_pack_start(GTK_BOX(main_vbox),main_overlay,TRUE,TRUE,GAP_SIZE);
+    gtk_box_pack_start(GTK_BOX(main_vbox),main_overlay,TRUE,TRUE,40);
     //***
 
     cards_init();
