@@ -37,6 +37,8 @@ Card cards[CARD_COUNT];
 
 Stack *covered_stack, *uncovered_stack, *dest_stack[4];
 
+int cards_on_dest_stacks;
+
 char *card_type_hierarchy[13] = {"king","queen","jack","10","9","8","7","6","5","4","3","2","ace"};
 
 void cards_init()

@@ -8,6 +8,8 @@
 
 GtkTargetEntry targets[1] = {"dummy",GTK_TARGET_SAME_APP,1};
 
+void new_game_init();
+
 //general
 void drag_begin(GtkWidget *target, gpointer data);
 void drag_drop(GtkWidget *source, gpointer data);
@@ -48,6 +50,36 @@ void drag_drop(GtkWidget *target, gpointer data)
     else if(src_y == 0 && targ_y  > 0) drag_from_stack_to_main(target,fixed);
     else if(src_y  > 0 && targ_y == 0) drag_from_main_to_dest(target,fixed,src_y);
     else if(src_y  > 0 && targ_y  > 0) drag_on_main(target,fixed,src_y);
+}
+
+//win game
+void win_game_block()
+{
+    Field *field;
+    for(int i = 0; i < 4; i++) field = stack_top(dest_stack[i]), gtk_drag_source_unset(field->widget);
+}
+
+void win_game_dialog_response(GtkWidget *dialog, gint response_id, gpointer data)
+{
+    switch(response_id)
+    {
+        case GTK_RESPONSE_REJECT: gtk_widget_destroy(dialog);
+                                  win_game_block();
+                                  break;
+
+        case GTK_RESPONSE_ACCEPT: gtk_widget_destroy(dialog);
+                                  new_game_init();
+                                  break;
+    }
+}
+
+void win_game()
+{
+    GtkWidget *win_dialog = gtk_dialog_new_with_buttons("Wygrana!",GTK_WINDOW(main_window),
+    GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,"Nowa gra",GTK_RESPONSE_ACCEPT,"Zamknij",GTK_RESPONSE_REJECT,NULL);
+    g_signal_connect(G_OBJECT(win_dialog),"response",G_CALLBACK(win_game_dialog_response),NULL);
+
+    gtk_widget_show_all(win_dialog);
 }
 
 // check if move can be made
@@ -159,6 +191,8 @@ void drag_from_main_to_dest(GtkWidget *target, GtkWidget *fixed, int src_y)
     
     if(main_grid[src_ind_x][src_ind_y-1]->locked) 
         unlock(main_grid[src_ind_x][src_ind_y-1],src_x,src_y-GAP_SIZE);
+
+    if(++cards_on_dest_stacks == CARD_COUNT) win_game();
 }
 
 void drag_from_stack_to_main(GtkWidget *target, GtkWidget *fixed)
@@ -192,6 +226,8 @@ void drag_from_stack_to_main(GtkWidget *target, GtkWidget *fixed)
         g_signal_connect(G_OBJECT(tmp_widget),"drag-drop",G_CALLBACK(drag_drop),NULL);
 
     main_grid[targ_ind_x][++main_grid_stack_size[targ_ind_x]] = src_field;
+
+    if(src_ind_x != 1) cards_on_dest_stacks--;
 }
 
 void drag_on_stacks(GtkWidget *target, GtkWidget *fixed)
@@ -225,6 +261,8 @@ void drag_on_stacks(GtkWidget *target, GtkWidget *fixed)
     if(src_ind_x == 1)
         gtk_drag_dest_set(src_field->widget,GTK_DEST_DEFAULT_ALL,targets,1,GDK_ACTION_COPY),
         g_signal_connect(G_OBJECT(src_field->widget),"drag-drop",G_CALLBACK(drag_drop),NULL);
+
+    if(src_ind_x == 1 && ++cards_on_dest_stacks == CARD_COUNT) win_game();
 }
 
 void covered_card_click(GtkWidget *widget, gpointer data)

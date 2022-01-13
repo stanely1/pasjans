@@ -41,6 +41,8 @@ void clear_game()
     clear_stack(&covered_stack);
     clear_stack(&uncovered_stack);
     for(int i = 0; i < 4; i++) clear_stack(&dest_stack[i]);
+
+    cards_on_dest_stacks = 0;
 }
 
 void new_game_init()
