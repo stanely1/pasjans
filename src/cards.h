@@ -27,7 +27,6 @@ typedef struct {
     GtkWidget *widget;
     Card *card;
     gboolean locked;
-   //gboolean is_base; // czy jest to pole bazowe (puste na dnie stosu)
 } Field;
 
 Field *main_grid[MAIN_GRID_SIZE_X][MAIN_GRID_SIZE_Y];

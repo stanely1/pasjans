@@ -87,14 +87,14 @@ gboolean check_on_main(Field *source, Field *target)
 {
     if(target->card == NULL) return !strcmp(source->card->type,"king");
     return strcmp(source->card->color, target->card->color) && (source->card->type_hierarchy == target->card->type_hierarchy+1);
-    //różny color , roznica hierarchii typów = 1
+    //rozny color , roznica hierarchii typow = 1
 }
 
 gboolean check_on_stack(Field *source, Field *target)
 {
     if(target == NULL) return !strcmp(source->card->type,"ace"); // na dol idzie as
     return !strcmp(source->card->sign, target->card->sign) && (source->card->type_hierarchy+1 == target->card->type_hierarchy);
-    // ten sam znak i roznica hierarchii typów = 1
+    // ten sam znak i roznica hierarchii typow = 1
 }
 
 //make card draggable
