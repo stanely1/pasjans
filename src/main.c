@@ -102,7 +102,6 @@ void main_window_init()
     main_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(main_window),"Pasjans");
     gtk_window_maximize(GTK_WINDOW(main_window));
-   // gtk_window_set_resizable(GTK_WINDOW(main_window),FALSE);
     gtk_container_set_border_width(GTK_CONTAINER(main_window),0);
     
     GdkColor bg_color = {.red = 120, .green = 20125, .blue = 812};
@@ -121,6 +120,9 @@ void main_window_init()
     GtkWidget *new_game_menu_item = gtk_menu_item_new_with_label("Nowa gra");
     g_signal_connect(G_OBJECT(new_game_menu_item),"activate",G_CALLBACK(new_game_init),NULL);
     gtk_menu_shell_append(GTK_MENU_SHELL(menubar),new_game_menu_item);
+
+    GtkWidget *rules_menu_item = gtk_menu_item_new_with_label("Zasady");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menubar),rules_menu_item);
 
     GtkWidget *preferences_menu_item = gtk_menu_item_new_with_label("Preferencje");
     gtk_menu_shell_append(GTK_MENU_SHELL(menubar),preferences_menu_item);

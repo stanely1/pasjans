@@ -79,7 +79,7 @@ void win_game()
     GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,"Nowa gra",GTK_RESPONSE_ACCEPT,"Zamknij",GTK_RESPONSE_REJECT,NULL);
     g_signal_connect(G_OBJECT(win_dialog),"response",G_CALLBACK(win_game_dialog_response),NULL);
 
-    gtk_widget_show_all(win_dialog);
+    gtk_dialog_run(GTK_DIALOG(win_dialog));
 }
 
 // check if move can be made
