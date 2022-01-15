@@ -8,6 +8,10 @@
 
 GtkTargetEntry targets[1] = {"dummy",GTK_TARGET_SAME_APP,1};
 
+int current_game_time = 0;
+int current_timer_id = 0;
+int current_moves = 0;
+
 void new_game_init();
 
 //general
@@ -22,6 +26,9 @@ void drag_on_stacks(GtkWidget *target, GtkWidget *fixed);
 
 void covered_card_click(GtkWidget *widget, gpointer data);
 void covered_base_click(GtkWidget *widget, gpointer data);
+
+gboolean timer_update(int *seconds);
+void moves_add();
 
 //*******************************************************************************//
 
@@ -75,6 +82,8 @@ void win_game_dialog_response(GtkWidget *dialog, gint response_id, gpointer data
 
 void win_game()
 {
+    g_source_remove(current_timer_id);
+
     GtkWidget *win_dialog = gtk_dialog_new_with_buttons("Wygrana!",GTK_WINDOW(main_window),
     GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,"Nowa gra",GTK_RESPONSE_ACCEPT,"Zamknij",GTK_RESPONSE_REJECT,NULL);
     g_signal_connect(G_OBJECT(win_dialog),"response",G_CALLBACK(win_game_dialog_response),NULL);
@@ -162,6 +171,8 @@ void drag_on_main(GtkWidget *target, GtkWidget *fixed, int src_y)
 
     if(main_grid[src_ind_x][main_grid_stack_size[src_ind_x]]->locked) 
         unlock(main_grid[src_ind_x][main_grid_stack_size[src_ind_x]],src_x,src_y-GAP_SIZE);
+
+    moves_add();
 }
 
 void drag_from_main_to_dest(GtkWidget *target, GtkWidget *fixed, int src_y)
@@ -193,6 +204,7 @@ void drag_from_main_to_dest(GtkWidget *target, GtkWidget *fixed, int src_y)
         unlock(main_grid[src_ind_x][src_ind_y-1],src_x,src_y-GAP_SIZE);
 
     if(++cards_on_dest_stacks == CARD_COUNT) win_game();
+    moves_add();
 }
 
 void drag_from_stack_to_main(GtkWidget *target, GtkWidget *fixed)
@@ -228,6 +240,7 @@ void drag_from_stack_to_main(GtkWidget *target, GtkWidget *fixed)
     main_grid[targ_ind_x][++main_grid_stack_size[targ_ind_x]] = src_field;
 
     if(src_ind_x != 1) cards_on_dest_stacks--;
+    moves_add();
 }
 
 void drag_on_stacks(GtkWidget *target, GtkWidget *fixed)
@@ -263,6 +276,7 @@ void drag_on_stacks(GtkWidget *target, GtkWidget *fixed)
         g_signal_connect(G_OBJECT(src_field->widget),"drag-drop",G_CALLBACK(drag_drop),NULL);
 
     if(src_ind_x == 1 && ++cards_on_dest_stacks == CARD_COUNT) win_game();
+    moves_add();
 }
 
 void covered_card_click(GtkWidget *widget, gpointer data)
@@ -278,6 +292,7 @@ void covered_card_click(GtkWidget *widget, gpointer data)
     gtk_widget_show_all(covered_top->widget);
 
     if(stack_is_empty(covered_stack)) gtk_widget_hide(covered_stack_card);
+    moves_add();
 }
 
 void covered_base_click(GtkWidget *widget, gpointer data)
@@ -290,6 +305,31 @@ void covered_base_click(GtkWidget *widget, gpointer data)
     while(!stack_is_empty(uncovered_stack)) stack_insert(&covered_stack,stack_pop(&uncovered_stack));
 
     if(!stack_is_empty(covered_stack)) gtk_widget_show_all(covered_stack_card);
+    moves_add();
+}
+
+//timer + moves
+void moves_add()
+{
+    if(++current_moves == 1) current_timer_id = g_timeout_add_seconds(1,(GSourceFunc)timer_update,&current_game_time);
+
+    char label[25];
+    sprintf(label,"Ilość ruchów: %d",current_moves);
+    gtk_label_set_text(GTK_LABEL(move_counter),label);
+}
+gboolean timer_update(int *seconds)
+{
+    (*seconds)++;
+
+    int s = (*seconds)%60;
+    int m = ((*seconds)/60)%60;
+    int h = (*seconds)/3600;
+
+    char label[25];
+    sprintf(label,"Czas gry: %s%d:%s%d:%s%d",h<10 ? "0":"",h, m<10 ? "0":"",m, s<10 ? "0":"",s);
+    gtk_label_set_text(GTK_LABEL(timer),label);
+
+    return TRUE;
 }
 
 #endif

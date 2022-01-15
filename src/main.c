@@ -43,6 +43,12 @@ void clear_game()
     for(int i = 0; i < 4; i++) clear_stack(&dest_stack[i]);
 
     cards_on_dest_stacks = 0;
+    current_game_time = 0;
+    current_moves = 0;
+
+    gtk_label_set_text(GTK_LABEL(timer),"Czas gry: 00:00:00");
+    gtk_label_set_text(GTK_LABEL(move_counter),"Ilość ruchów: 0");
+    if(current_timer_id != 0) g_source_remove(current_timer_id);
 }
 
 void new_game_init()
@@ -199,6 +205,18 @@ void main_window_init()
     covered_stack = stack_new();
     uncovered_stack = stack_new();
     for(int i = 0; i < 4; i++) dest_stack[i] = stack_new();
+    //***
+
+    //timer
+    timer = gtk_label_new(NULL);
+    g_object_set(timer,"halign",GTK_ALIGN_START,"valign",GTK_ALIGN_END,"margin-start",40,NULL);
+    gtk_overlay_add_overlay(GTK_OVERLAY(main_overlay),timer);
+    //***
+
+    //move counter
+    move_counter = gtk_label_new(NULL);
+    g_object_set(move_counter,"halign",GTK_ALIGN_START,"valign",GTK_ALIGN_END,"margin-start",40,"margin-bottom",20,NULL);
+    gtk_overlay_add_overlay(GTK_OVERLAY(main_overlay),move_counter);
     //***
 
     new_game_init();

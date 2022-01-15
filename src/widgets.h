@@ -10,5 +10,7 @@ GtkWidget *covered_stack_base;
 GtkWidget *uncovered_stack_base;
 GtkWidget *dest_stack_base[4];
 GtkWidget *menubar;
+GtkWidget *timer;
+GtkWidget *move_counter;
 
 #endif
