@@ -71,10 +71,8 @@ void new_game_init()
             main_grid[i][j]->widget = gtk_event_box_new();
             
             if(main_grid[i][j]->locked)
-            {
-                GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file_at_scale("images/zback_blue.svg",CARD_WIDTH,CARD_HEIGHT,TRUE,NULL);
-                gtk_container_add(GTK_CONTAINER(main_grid[i][j]->widget),gtk_image_new_from_pixbuf(pixbuf));
-            }
+                gtk_container_add(GTK_CONTAINER(main_grid[i][j]->widget),gtk_image_new_from_pixbuf(card_back_pixbuf[current_card_back_state]));
+
             else gtk_container_add(GTK_CONTAINER(main_grid[i][j]->widget),cards[current_ind].image), make_draggable(main_grid[i][j]);
             
             gtk_fixed_put(GTK_FIXED(main_fixed),main_grid[i][j]->widget,i*(GAP_SIZE+CARD_WIDTH),MAIN_GRID_START_Y+(j-1)*GAP_SIZE);
@@ -131,6 +129,7 @@ void main_window_init()
     gtk_menu_shell_append(GTK_MENU_SHELL(menubar),rules_menu_item);
 
     GtkWidget *preferences_menu_item = gtk_menu_item_new_with_label("Preferencje");
+    g_signal_connect(G_OBJECT(preferences_menu_item),"activate",G_CALLBACK(preferences_dialog_init),NULL);
     gtk_menu_shell_append(GTK_MENU_SHELL(menubar),preferences_menu_item);
 
     GtkWidget *stats_menu_item = gtk_menu_item_new_with_label("Statystyki");
@@ -169,17 +168,25 @@ void main_window_init()
     }
     //***
 
+    //card back color
+    FILE *card_back_tmp_file = fopen("data/card_back_state","r");
+    fscanf(card_back_tmp_file,"%d",&current_card_back_state);
+    fclose(card_back_tmp_file);
+
+    tmp_card_back_state = current_card_back_state;
+
+    card_back_pixbuf[0] = gdk_pixbuf_new_from_file_at_scale("images/zback_red.svg",CARD_WIDTH,CARD_HEIGHT,TRUE,NULL);
+    card_back_pixbuf[1] = gdk_pixbuf_new_from_file_at_scale("images/zback_blue.svg",CARD_WIDTH,CARD_HEIGHT,TRUE,NULL);
+
     //kupka do dobierania
     covered_stack_base = gtk_event_box_new();
-    //gtk_container_add(GTK_CONTAINER(covered_stack_base),gtk_frame_new(NULL));
     gtk_widget_set_size_request(covered_stack_base,CARD_WIDTH,CARD_HEIGHT);
     g_signal_connect(G_OBJECT(covered_stack_base),"button-press-event",G_CALLBACK(covered_base_click),NULL);
     gtk_fixed_put(GTK_FIXED(main_fixed),covered_stack_base,0,0);
     gtk_widget_modify_bg(covered_stack_base,GTK_STATE_NORMAL,&frame_color);
 
-    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file_at_scale("images/zback_blue.svg",CARD_WIDTH,CARD_HEIGHT,TRUE,NULL);
     covered_stack_card = gtk_event_box_new();
-    gtk_container_add(GTK_CONTAINER(covered_stack_card),gtk_image_new_from_pixbuf(pixbuf));
+    gtk_container_add(GTK_CONTAINER(covered_stack_card),gtk_image_new_from_pixbuf(card_back_pixbuf[current_card_back_state]));
     g_signal_connect(G_OBJECT(covered_stack_card),"button-press-event",G_CALLBACK(covered_card_click),NULL);
     gtk_fixed_put(GTK_FIXED(main_fixed),covered_stack_card,0,0);
 

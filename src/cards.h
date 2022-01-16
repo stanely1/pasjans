@@ -42,7 +42,7 @@ char *card_type_hierarchy[13] = {"king","queen","jack","10","9","8","7","6","5",
 
 void cards_init()
 {
-    FILE *card_inp = fopen("card_info","r");
+    FILE *card_inp = fopen("data/card_info","r");
     for(int i = 0; i < CARD_COUNT; i++)
     {
         fscanf(card_inp,"%s",cards[i].color);

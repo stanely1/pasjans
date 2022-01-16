@@ -30,6 +30,8 @@ void covered_base_click(GtkWidget *widget, gpointer data);
 gboolean timer_update(int *seconds);
 void moves_add();
 
+void preferences_dialog_init(GtkWidget *widget, gpointer data);
+
 //*******************************************************************************//
 
 GtkWidget *drag_source;
@@ -331,6 +333,67 @@ gboolean timer_update(int *seconds)
     gtk_label_set_text(GTK_LABEL(timer),label);
 
     return TRUE;
+}
+
+//preferences
+int current_card_back_state;
+int tmp_card_back_state;
+
+void card_back_toggle(GtkWidget *widget, gpointer data)
+{
+    tmp_card_back_state ^= 1;
+}
+
+void preferences_dialog_response(GtkWidget *dialog, gint response_id, gpointer data)
+{
+    if(response_id != GTK_RESPONSE_APPLY) {gtk_widget_destroy(dialog); tmp_card_back_state = current_card_back_state; return;}
+
+    current_card_back_state = tmp_card_back_state;
+
+    for(int i = 0; i < MAIN_GRID_SIZE_X; i++)
+        for(int j = 1; j < MAIN_GRID_SIZE_Y; j++)
+            if(main_grid[i][j] != NULL && main_grid[i][j]->locked)
+                gtk_container_foreach(GTK_CONTAINER(main_grid[i][j]->widget),(void*)gtk_widget_destroy,NULL),
+                gtk_container_add(GTK_CONTAINER(main_grid[i][j]->widget),gtk_image_new_from_pixbuf(card_back_pixbuf[current_card_back_state])),
+                gtk_widget_show_all(main_grid[i][j]->widget);
+
+    gtk_container_foreach(GTK_CONTAINER(covered_stack_card),(void*)gtk_widget_destroy,NULL);
+    gtk_container_add(GTK_CONTAINER(covered_stack_card),gtk_image_new_from_pixbuf(card_back_pixbuf[current_card_back_state]));
+    if(!stack_is_empty(covered_stack)) gtk_widget_show_all(covered_stack_card);
+
+    FILE *card_back_tmp_file = fopen("data/card_back_state","w");
+    fprintf(card_back_tmp_file,"%d",current_card_back_state);
+    fclose(card_back_tmp_file);
+}
+
+void preferences_dialog_init(GtkWidget *widget, gpointer data)
+{
+    //main dialog window
+    GtkWidget *preferences_dialog = gtk_dialog_new_with_buttons("Preferencje",GTK_WINDOW(main_window),
+    GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,"Zapisz",GTK_RESPONSE_APPLY,"Anuluj",GTK_RESPONSE_CANCEL,NULL);
+    g_signal_connect(G_OBJECT(preferences_dialog),"response",G_CALLBACK(preferences_dialog_response),NULL);
+
+    gtk_window_set_resizable(GTK_WINDOW(preferences_dialog),FALSE);
+
+    GtkWidget *preferences_fixed = gtk_fixed_new();
+    gtk_container_set_border_width(GTK_CONTAINER(preferences_fixed),10);
+    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(preferences_dialog))),preferences_fixed,TRUE,TRUE,0);
+
+    //card back color
+    gtk_fixed_put(GTK_FIXED(preferences_fixed),gtk_label_new("Tył kraty:"),0,0);
+
+    GtkWidget *card_back_button[2] = {gtk_radio_button_new_with_label(NULL,"Czerwony"),gtk_radio_button_new_with_label(NULL,"Niebieski")};
+    gtk_radio_button_join_group(GTK_RADIO_BUTTON(card_back_button[0]),GTK_RADIO_BUTTON(card_back_button[1]));
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(card_back_button[current_card_back_state]),TRUE);
+
+    g_signal_connect(G_OBJECT(card_back_button[0]),"toggled",G_CALLBACK(card_back_toggle),NULL);
+
+    gtk_fixed_put(GTK_FIXED(preferences_fixed),card_back_button[0],0,30);
+    gtk_fixed_put(GTK_FIXED(preferences_fixed),card_back_button[1],0,55);
+    
+
+    gtk_widget_show_all(preferences_dialog);
+    gtk_dialog_run(GTK_DIALOG(preferences_dialog));
 }
 
 #endif

@@ -13,4 +13,6 @@ GtkWidget *menubar;
 GtkWidget *timer;
 GtkWidget *move_counter;
 
+GdkPixbuf *card_back_pixbuf[2];
+
 #endif
