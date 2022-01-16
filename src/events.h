@@ -70,16 +70,8 @@ void win_game_block()
 
 void win_game_dialog_response(GtkWidget *dialog, gint response_id, gpointer data)
 {
-    switch(response_id)
-    {
-        case GTK_RESPONSE_REJECT: gtk_widget_destroy(dialog);
-                                  win_game_block();
-                                  break;
-
-        case GTK_RESPONSE_ACCEPT: gtk_widget_destroy(dialog);
-                                  new_game_init();
-                                  break;
-    }
+    gtk_widget_destroy(dialog);
+    response_id == GTK_RESPONSE_ACCEPT ? new_game_init() : win_game_block();
 }
 
 void win_game()
