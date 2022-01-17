@@ -138,7 +138,7 @@ void unlock(Field *field, int x, int y)
 
 void drag_on_main(GtkWidget *target, GtkWidget *fixed, int src_y)
 {
-    get_src_targ_x;
+    get_src_targ_x
 
     int src_ind_x  = src_x/(GAP_SIZE+CARD_WIDTH);
     int src_ind_y  = (src_y-MAIN_GRID_START_Y)/GAP_SIZE + 1;
@@ -336,10 +336,17 @@ void card_back_toggle(GtkWidget *widget, gpointer data)
     tmp_card_back_state ^= 1;
 }
 
-void preferences_dialog_response(GtkWidget *dialog, gint response_id, gpointer data)
+void preferences_reset(GtkWidget *widget, GtkWidget *color_button[])
+{
+    gtk_color_button_set_color(GTK_COLOR_BUTTON(color_button[0]),&default_bg_color);
+    gtk_color_button_set_color(GTK_COLOR_BUTTON(color_button[1]),&default_frame_color);
+}
+
+void preferences_dialog_response(GtkWidget *dialog, gint response_id, GtkWidget *color_button[])
 {
     if(response_id != GTK_RESPONSE_APPLY) {gtk_widget_destroy(dialog); tmp_card_back_state = current_card_back_state; return;}
 
+    //card back color
     current_card_back_state = tmp_card_back_state;
 
     for(int i = 0; i < MAIN_GRID_SIZE_X; i++)
@@ -356,6 +363,24 @@ void preferences_dialog_response(GtkWidget *dialog, gint response_id, gpointer d
     FILE *card_back_tmp_file = fopen("data/card_back_state","w");
     fprintf(card_back_tmp_file,"%d",current_card_back_state);
     fclose(card_back_tmp_file);
+
+    //bg and frame color
+    gtk_color_button_get_color(GTK_COLOR_BUTTON(color_button[0]),&current_bg_color);
+    gtk_color_button_get_color(GTK_COLOR_BUTTON(color_button[1]),&current_frame_color);
+
+    gtk_widget_modify_bg(main_window,GTK_STATE_NORMAL,&current_bg_color);
+
+    for(int i = 0; i < MAIN_GRID_SIZE_X; i++) gtk_widget_modify_bg(main_grid[i][0]->widget,GTK_STATE_NORMAL,&current_frame_color);
+    gtk_widget_modify_bg(covered_stack_base,GTK_STATE_NORMAL,&current_frame_color);
+    gtk_widget_modify_bg(uncovered_stack_base,GTK_STATE_NORMAL,&current_frame_color);
+    for(int i = 0; i < 4; i++) gtk_widget_modify_bg(dest_stack_base[i],GTK_STATE_NORMAL,&current_frame_color);
+
+    FILE *color_tmp_file = fopen("data/color_preferences","wb");
+    fwrite(&current_bg_color,sizeof(current_bg_color),1,color_tmp_file);
+    fwrite(&current_frame_color,sizeof(current_frame_color),1,color_tmp_file);
+    fclose(color_tmp_file);
+
+    gtk_dialog_run(GTK_DIALOG(dialog));
 }
 
 void preferences_dialog_init(GtkWidget *widget, gpointer data)
@@ -363,16 +388,16 @@ void preferences_dialog_init(GtkWidget *widget, gpointer data)
     //main dialog window
     GtkWidget *preferences_dialog = gtk_dialog_new_with_buttons("Preferencje",GTK_WINDOW(main_window),
     GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,"Zapisz",GTK_RESPONSE_APPLY,"Anuluj",GTK_RESPONSE_CANCEL,NULL);
-    g_signal_connect(G_OBJECT(preferences_dialog),"response",G_CALLBACK(preferences_dialog_response),NULL);
 
     gtk_window_set_resizable(GTK_WINDOW(preferences_dialog),FALSE);
+    g_object_set(gtk_dialog_get_action_area(GTK_DIALOG(preferences_dialog)),"halign",GTK_ALIGN_CENTER,NULL);
 
     GtkWidget *preferences_fixed = gtk_fixed_new();
     gtk_container_set_border_width(GTK_CONTAINER(preferences_fixed),10);
     gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(preferences_dialog))),preferences_fixed,TRUE,TRUE,0);
 
     //card back color
-    gtk_fixed_put(GTK_FIXED(preferences_fixed),gtk_label_new("Tył kraty:"),0,0);
+    gtk_fixed_put(GTK_FIXED(preferences_fixed),gtk_label_new("Tył kraty:"),0,4);
 
     GtkWidget *card_back_button[2] = {gtk_radio_button_new_with_label(NULL,"Czerwony"),gtk_radio_button_new_with_label(NULL,"Niebieski")};
     gtk_radio_button_join_group(GTK_RADIO_BUTTON(card_back_button[0]),GTK_RADIO_BUTTON(card_back_button[1]));
@@ -380,9 +405,23 @@ void preferences_dialog_init(GtkWidget *widget, gpointer data)
 
     g_signal_connect(G_OBJECT(card_back_button[0]),"toggled",G_CALLBACK(card_back_toggle),NULL);
 
-    gtk_fixed_put(GTK_FIXED(preferences_fixed),card_back_button[0],0,30);
-    gtk_fixed_put(GTK_FIXED(preferences_fixed),card_back_button[1],0,55);
+    gtk_fixed_put(GTK_FIXED(preferences_fixed),card_back_button[0],0,36);
+    gtk_fixed_put(GTK_FIXED(preferences_fixed),card_back_button[1],0,61);
     
+    //color buttons
+    gtk_fixed_put(GTK_FIXED(preferences_fixed),gtk_label_new("Kolor tła:"),150,4);
+    gtk_fixed_put(GTK_FIXED(preferences_fixed),gtk_label_new("Kolor pod kartami:"),150,36);
+
+    GtkWidget *color_button[2] = {gtk_color_button_new_with_color(&current_bg_color),gtk_color_button_new_with_color(&current_frame_color)};
+    gtk_fixed_put(GTK_FIXED(preferences_fixed),color_button[0],300,0);
+    gtk_fixed_put(GTK_FIXED(preferences_fixed),color_button[1],300,32);
+
+    //reset to default button
+    GtkWidget *reset_button = gtk_button_new_with_label("Domyślne");
+    g_signal_connect(G_OBJECT(reset_button),"clicked",G_CALLBACK(preferences_reset),color_button);
+    gtk_fixed_put(GTK_FIXED(preferences_fixed),reset_button,150,70);
+    //****
+    g_signal_connect(G_OBJECT(preferences_dialog),"response",G_CALLBACK(preferences_dialog_response),color_button);
 
     gtk_widget_show_all(preferences_dialog);
     gtk_dialog_run(GTK_DIALOG(preferences_dialog));

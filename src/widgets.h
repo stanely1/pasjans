@@ -15,4 +15,10 @@ GtkWidget *move_counter;
 
 GdkPixbuf *card_back_pixbuf[2];
 
+GdkColor default_bg_color = {.red = 120, .green = 20125, .blue = 812};
+GdkColor default_frame_color = {.red = 120, .green = 25565, .blue = 812};
+
+GdkColor current_bg_color;
+GdkColor current_frame_color;
+
 #endif

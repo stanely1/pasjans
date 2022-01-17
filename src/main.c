@@ -107,10 +107,17 @@ void main_window_init()
     gtk_window_set_title(GTK_WINDOW(main_window),"Pasjans");
     gtk_window_maximize(GTK_WINDOW(main_window));
     gtk_container_set_border_width(GTK_CONTAINER(main_window),0);
+
+    FILE *color_tmp_file = fopen("data/color_preferences","rb");
+    if(color_tmp_file == NULL)
+        current_bg_color = default_bg_color,
+        current_frame_color = default_frame_color;
+    else
+        fread(&current_bg_color,sizeof(current_bg_color),1,color_tmp_file),
+        fread(&current_frame_color,sizeof(current_frame_color),1,color_tmp_file),
+        fclose(color_tmp_file);
     
-    GdkColor bg_color = {.red = 120, .green = 20125, .blue = 812};
-    GdkColor frame_color = {.red = 120, .green = 25565, .blue = 812};
-    gtk_widget_modify_bg(main_window,GTK_STATE_NORMAL,&bg_color);
+    gtk_widget_modify_bg(main_window,GTK_STATE_NORMAL,&current_bg_color);
 
     g_signal_connect(G_OBJECT(main_window),"destroy",G_CALLBACK(gtk_main_quit),NULL);
     // *******
@@ -164,14 +171,15 @@ void main_window_init()
         g_signal_connect(G_OBJECT(main_grid[i][0]->widget),"drag-drop",G_CALLBACK(drag_drop),NULL);
         
         gtk_fixed_put(GTK_FIXED(main_fixed),main_grid[i][0]->widget,i*(GAP_SIZE+CARD_WIDTH),MAIN_GRID_START_Y);
-        gtk_widget_modify_bg(main_grid[i][0]->widget,GTK_STATE_NORMAL,&frame_color);
+        gtk_widget_modify_bg(main_grid[i][0]->widget,GTK_STATE_NORMAL,&current_frame_color);
     }
     //***
 
     //card back color
     FILE *card_back_tmp_file = fopen("data/card_back_state","r");
-    fscanf(card_back_tmp_file,"%d",&current_card_back_state);
-    fclose(card_back_tmp_file);
+    if(card_back_tmp_file == NULL) current_card_back_state = 0;
+    else fscanf(card_back_tmp_file,"%d",&current_card_back_state),
+         fclose(card_back_tmp_file);
 
     tmp_card_back_state = current_card_back_state;
 
@@ -183,7 +191,7 @@ void main_window_init()
     gtk_widget_set_size_request(covered_stack_base,CARD_WIDTH,CARD_HEIGHT);
     g_signal_connect(G_OBJECT(covered_stack_base),"button-press-event",G_CALLBACK(covered_base_click),NULL);
     gtk_fixed_put(GTK_FIXED(main_fixed),covered_stack_base,0,0);
-    gtk_widget_modify_bg(covered_stack_base,GTK_STATE_NORMAL,&frame_color);
+    gtk_widget_modify_bg(covered_stack_base,GTK_STATE_NORMAL,&current_frame_color);
 
     covered_stack_card = gtk_event_box_new();
     gtk_container_add(GTK_CONTAINER(covered_stack_card),gtk_image_new_from_pixbuf(card_back_pixbuf[current_card_back_state]));
@@ -193,7 +201,7 @@ void main_window_init()
     uncovered_stack_base = gtk_label_new(NULL);
     gtk_widget_set_size_request(uncovered_stack_base,CARD_WIDTH,CARD_HEIGHT);
     gtk_fixed_put(GTK_FIXED(main_fixed),uncovered_stack_base,CARD_WIDTH+GAP_SIZE,0);
-    gtk_widget_modify_bg(uncovered_stack_base,GTK_STATE_NORMAL,&frame_color);
+    gtk_widget_modify_bg(uncovered_stack_base,GTK_STATE_NORMAL,&current_frame_color);
     //***
 
     //dest
@@ -204,7 +212,7 @@ void main_window_init()
         gtk_drag_dest_set(dest_stack_base[i],GTK_DEST_DEFAULT_ALL,targets,1,GDK_ACTION_COPY);
         g_signal_connect(G_OBJECT(dest_stack_base[i]),"drag-drop",G_CALLBACK(drag_drop),NULL);
         gtk_fixed_put(GTK_FIXED(main_fixed),dest_stack_base[i],(MAIN_GRID_SIZE_X-4+i)*(GAP_SIZE+CARD_WIDTH),0);
-        gtk_widget_modify_bg(dest_stack_base[i],GTK_STATE_NORMAL,&frame_color);
+        gtk_widget_modify_bg(dest_stack_base[i],GTK_STATE_NORMAL,&current_frame_color);
     }
     //****
 
