@@ -95,6 +95,9 @@ void new_game_init()
 
         gtk_drag_source_set(field->widget,GDK_BUTTON1_MASK,targets,1,GDK_ACTION_COPY);
         g_signal_connect(G_OBJECT(field->widget),"drag-begin",G_CALLBACK(drag_begin),NULL);
+
+        g_signal_connect(G_OBJECT(field->widget),"button-press-event",G_CALLBACK(card_double_click),field);
+        g_signal_connect(G_OBJECT(field->widget),"button-release-event",G_CALLBACK(card_release),field);
         
         stack_insert(&covered_stack,field);
     }

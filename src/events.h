@@ -27,6 +27,9 @@ void drag_on_stacks(GtkWidget *target, GtkWidget *fixed);
 void covered_card_click(GtkWidget *widget, gpointer data);
 void covered_base_click(GtkWidget *widget, gpointer data);
 
+void card_double_click(GtkWidget *widget, GdkEventButton *event, Field *field);
+void card_release(GtkWidget *widget, GdkEventButton *event, gpointer data);
+
 gboolean timer_update(int *seconds);
 void moves_add();
 
@@ -39,11 +42,13 @@ GtkWidget *drag_source;
 // general functions definition
 void drag_begin(GtkWidget *source, gpointer data)
 {
-    drag_source = source;
+    drag_source = source == drag_source ? NULL : source;
 }
 
 void drag_drop(GtkWidget *target, gpointer data)
 {
+    if(drag_source == NULL) return;
+
     GtkWidget *fixed = gtk_widget_get_parent(target);
 
     GValue gvy = G_VALUE_INIT;
@@ -59,6 +64,8 @@ void drag_drop(GtkWidget *target, gpointer data)
     else if(src_y == 0 && targ_y  > 0) drag_from_stack_to_main(target,fixed);
     else if(src_y  > 0 && targ_y == 0) drag_from_main_to_dest(target,fixed,src_y);
     else if(src_y  > 0 && targ_y  > 0) drag_on_main(target,fixed,src_y);
+
+    drag_source = NULL;
 }
 
 //win game
@@ -109,6 +116,9 @@ void make_draggable(Field *field)
 
     g_signal_connect(G_OBJECT(field->widget),"drag-begin",G_CALLBACK(drag_begin),NULL);
     g_signal_connect(G_OBJECT(field->widget),"drag-drop",G_CALLBACK(drag_drop),NULL);
+
+    g_signal_connect(G_OBJECT(field->widget),"button-press-event",G_CALLBACK(card_double_click),field);
+    g_signal_connect(G_OBJECT(field->widget),"button-release-event",G_CALLBACK(card_release),field);
 }
 
 //unlock card
@@ -301,6 +311,31 @@ void covered_base_click(GtkWidget *widget, gpointer data)
 
     if(!stack_is_empty(covered_stack)) gtk_widget_show_all(covered_stack_card);
     moves_add();
+}
+
+void card_double_click(GtkWidget *widget, GdkEventButton *event, Field *field)
+{
+    if(event->type != GDK_2BUTTON_PRESS) return;
+    
+    for(int i = 0; i < 4; i++) 
+        if(field == stack_top(dest_stack[i])) return; // field on dest
+
+    drag_source = field->widget;
+
+    for(int i = 0; i < 4; i++)
+    {
+        Field *targ_field = stack_top(dest_stack[i]);
+        if(check_on_stack(field,targ_field)) 
+        {
+            drag_drop(targ_field == NULL ? dest_stack_base[i] : targ_field->widget, NULL); 
+            drag_source = field->widget;
+            break;
+        }
+    }
+}
+void card_release(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+    drag_source = NULL;
 }
 
 //timer + moves
