@@ -12,11 +12,15 @@ int current_game_time = 0;
 int current_timer_id = 0;
 int current_moves = 0;
 
+enum Stat_type {GAMES_PLAYED_STAT,GAMES_WON_STAT,FEWEST_MOVES_STAT,BEST_TIME_SECONDS_STAT};
+int stat_value[4] = {0};
+
 void new_game_init();
 
 //general
 void drag_begin(GtkWidget *target, gpointer data);
 void drag_drop(GtkWidget *source, gpointer data);
+void drag_end(GtkWidget *source, gpointer data);
 
 //specific
 void drag_on_main(GtkWidget *target, GtkWidget *fixed, int src_y);
@@ -34,6 +38,8 @@ gboolean timer_update(int *seconds);
 void moves_add();
 
 void preferences_dialog_init(GtkWidget *widget, gpointer data);
+void stats_dialog_init(GtkWidget *widget, gpointer data);
+void save_stats();
 
 //*******************************************************************************//
 
@@ -64,7 +70,10 @@ void drag_drop(GtkWidget *target, gpointer data)
     else if(src_y == 0 && targ_y  > 0) drag_from_stack_to_main(target,fixed);
     else if(src_y  > 0 && targ_y == 0) drag_from_main_to_dest(target,fixed,src_y);
     else if(src_y  > 0 && targ_y  > 0) drag_on_main(target,fixed,src_y);
+}
 
+void drag_end(GtkWidget *source, gpointer data)
+{
     drag_source = NULL;
 }
 
@@ -85,6 +94,14 @@ void win_game()
 {
     g_source_remove(current_timer_id);
     current_timer_id = 0;
+
+    stat_value[GAMES_WON_STAT]++;
+    if(stat_value[FEWEST_MOVES_STAT] == 0 || current_moves < stat_value[FEWEST_MOVES_STAT]) 
+        stat_value[FEWEST_MOVES_STAT] = current_moves;
+    if(stat_value[BEST_TIME_SECONDS_STAT] == 0 || current_game_time < stat_value[BEST_TIME_SECONDS_STAT])
+        stat_value[BEST_TIME_SECONDS_STAT] = current_game_time;
+
+    save_stats();
 
     GtkWidget *win_dialog = gtk_dialog_new_with_buttons("Wygrana!",GTK_WINDOW(main_window),
     GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,"Nowa gra",GTK_RESPONSE_ACCEPT,"Zamknij",GTK_RESPONSE_REJECT,NULL);
@@ -116,6 +133,8 @@ void make_draggable(Field *field)
 
     g_signal_connect(G_OBJECT(field->widget),"drag-begin",G_CALLBACK(drag_begin),NULL);
     g_signal_connect(G_OBJECT(field->widget),"drag-drop",G_CALLBACK(drag_drop),NULL);
+
+    g_signal_connect(G_OBJECT(field->widget),"drag-end",G_CALLBACK(drag_end),NULL);
 
     g_signal_connect(G_OBJECT(field->widget),"button-press-event",G_CALLBACK(card_double_click),field);
     g_signal_connect(G_OBJECT(field->widget),"button-release-event",G_CALLBACK(card_release),field);
@@ -328,7 +347,6 @@ void card_double_click(GtkWidget *widget, GdkEventButton *event, Field *field)
         if(check_on_stack(field,targ_field)) 
         {
             drag_drop(targ_field == NULL ? dest_stack_base[i] : targ_field->widget, NULL); 
-            drag_source = field->widget;
             break;
         }
     }
@@ -341,22 +359,34 @@ void card_release(GtkWidget *widget, GdkEventButton *event, gpointer data)
 //timer + moves
 void moves_add()
 {
-    if(++current_moves == 1) current_timer_id = g_timeout_add_seconds(1,(GSourceFunc)timer_update,&current_game_time);
+    if(++current_moves == 1) 
+    {
+        current_timer_id = g_timeout_add_seconds(1,(GSourceFunc)timer_update,&current_game_time); // start timer
+
+        stat_value[GAMES_PLAYED_STAT]++; // zwiekszamy liczbe rozegranych gier
+        save_stats();
+    }
 
     char label[25];
-    sprintf(label,"Ilość ruchów: %d",current_moves);
+    sprintf(label,"Liczba ruchów: %d",current_moves);
     gtk_label_set_text(GTK_LABEL(move_counter),label);
+}
+
+void secs_to_time_string(int seconds, char dststr[])
+{
+    int s = seconds%60;
+    int m = (seconds/60)%60;
+    int h = seconds/3600;
+
+    sprintf(dststr,"%s%d:%s%d:%s%d",h<10 ? "0":"",h, m<10 ? "0":"",m, s<10 ? "0":"",s);
 }
 gboolean timer_update(int *seconds)
 {
     (*seconds)++;
 
-    int s = (*seconds)%60;
-    int m = ((*seconds)/60)%60;
-    int h = (*seconds)/3600;
-
     char label[25];
-    sprintf(label,"Czas gry: %s%d:%s%d:%s%d",h<10 ? "0":"",h, m<10 ? "0":"",m, s<10 ? "0":"",s);
+    sprintf(label,"Czas gry: ");
+    secs_to_time_string(*seconds,label+10);
     gtk_label_set_text(GTK_LABEL(timer),label);
 
     return TRUE;
@@ -462,4 +492,46 @@ void preferences_dialog_init(GtkWidget *widget, gpointer data)
     gtk_dialog_run(GTK_DIALOG(preferences_dialog));
 }
 
+//stats
+void stats_dialog_response(GtkWidget *dialog, gint response_id, gpointer data)
+{
+    if(response_id == GTK_RESPONSE_CLOSE) gtk_widget_destroy(dialog);
+}
+
+void stats_dialog_init(GtkWidget *widget, gpointer data)
+{
+    GtkWidget *stats_dialog = gtk_dialog_new_with_buttons("Statystyki",GTK_WINDOW(main_window),
+    GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,"Zamknij",GTK_RESPONSE_CLOSE,NULL);
+    g_signal_connect(G_OBJECT(stats_dialog),"response",G_CALLBACK(stats_dialog_response),NULL);
+
+    gtk_window_set_resizable(GTK_WINDOW(stats_dialog),FALSE);
+    g_object_set(gtk_dialog_get_action_area(GTK_DIALOG(stats_dialog)),"halign",GTK_ALIGN_CENTER,NULL);
+
+    char stats_label_text[250];
+    char time_stat_text[12];
+    secs_to_time_string(stat_value[BEST_TIME_SECONDS_STAT],time_stat_text);
+    sprintf(stats_label_text,"Gry rozegrane: %d\n"
+                        "Gry wygrane: %d\n"
+                        "Procent gier wygranych: %.2lf%%\n"
+                        "Najmniejsza liczba ruchów w wygranej grze: %d\n"
+                        "Najkrótszy czas wygranej gry: %s",
+                        stat_value[GAMES_PLAYED_STAT],stat_value[GAMES_WON_STAT],
+                        stat_value[GAMES_PLAYED_STAT] != 0 ? (double)(stat_value[GAMES_WON_STAT]*100)/stat_value[GAMES_PLAYED_STAT] : 0,
+                        stat_value[FEWEST_MOVES_STAT],time_stat_text);
+
+    GtkWidget *stats_label_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,20);
+    gtk_box_pack_start(GTK_BOX(stats_label_box),gtk_label_new(stats_label_text),TRUE,TRUE,20);
+
+    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(stats_dialog))),stats_label_box,TRUE,TRUE,20);
+
+    gtk_widget_show_all(stats_dialog);
+    gtk_dialog_run(GTK_DIALOG(stats_dialog));
+}
+
+void save_stats()
+{
+        FILE *stats_tmp_file = fopen("data/stats","wb");
+        fwrite(stat_value,sizeof(stat_value),1,stats_tmp_file);
+        fclose(stats_tmp_file);
+}
 #endif

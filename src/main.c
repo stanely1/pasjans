@@ -47,8 +47,10 @@ void clear_game()
     current_moves = 0;
 
     gtk_label_set_text(GTK_LABEL(timer),"Czas gry: 00:00:00");
-    gtk_label_set_text(GTK_LABEL(move_counter),"Ilość ruchów: 0");
+    gtk_label_set_text(GTK_LABEL(move_counter),"Liczba ruchów: 0");
+
     if(current_timer_id != 0) g_source_remove(current_timer_id);
+    current_timer_id = 0;
 }
 
 void new_game_init()
@@ -95,6 +97,7 @@ void new_game_init()
 
         gtk_drag_source_set(field->widget,GDK_BUTTON1_MASK,targets,1,GDK_ACTION_COPY);
         g_signal_connect(G_OBJECT(field->widget),"drag-begin",G_CALLBACK(drag_begin),NULL);
+        g_signal_connect(G_OBJECT(field->widget),"drag-end",G_CALLBACK(drag_end),NULL);
 
         g_signal_connect(G_OBJECT(field->widget),"button-press-event",G_CALLBACK(card_double_click),field);
         g_signal_connect(G_OBJECT(field->widget),"button-release-event",G_CALLBACK(card_release),field);
@@ -111,6 +114,7 @@ void main_window_init()
     gtk_window_maximize(GTK_WINDOW(main_window));
     gtk_container_set_border_width(GTK_CONTAINER(main_window),0);
 
+    // color preferences
     FILE *color_tmp_file = fopen("data/color_preferences","rb");
     if(color_tmp_file == NULL)
         current_bg_color = default_bg_color,
@@ -121,9 +125,14 @@ void main_window_init()
         fclose(color_tmp_file);
     
     gtk_widget_modify_bg(main_window,GTK_STATE_NORMAL,&current_bg_color);
+    //******
+
+    //Stats
+    FILE *stats_tmp_file = fopen("data/stats","rb");
+    if(stats_tmp_file != NULL) fread(stat_value,sizeof(stat_value),1,stats_tmp_file), fclose(stats_tmp_file);
+    //***
 
     g_signal_connect(G_OBJECT(main_window),"destroy",G_CALLBACK(gtk_main_quit),NULL);
-    // *******
 
     GtkWidget *main_vbox = gtk_vbox_new(FALSE,0);
     gtk_container_add(GTK_CONTAINER(main_window),main_vbox);
@@ -143,6 +152,7 @@ void main_window_init()
     gtk_menu_shell_append(GTK_MENU_SHELL(menubar),preferences_menu_item);
 
     GtkWidget *stats_menu_item = gtk_menu_item_new_with_label("Statystyki");
+    g_signal_connect(G_OBJECT(stats_menu_item),"activate",G_CALLBACK(stats_dialog_init),NULL);
     gtk_menu_shell_append(GTK_MENU_SHELL(menubar),stats_menu_item);
 
     gtk_box_pack_start(GTK_BOX(main_vbox),menubar,FALSE,TRUE,0);
