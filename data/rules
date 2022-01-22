@@ -1,0 +1,13 @@
+Cel gry:
+
+Celem gry jest odłożenie wszystkich kart na 4 stosy, znajdujące się w prawym górnym rogu planszy. Na każdym z tych stosów znajdują się karty w tym samym kolorze, posortowane w kolejności od asa do króla (A-2-3-4-5-6-7-8-9-10-J-Q-K) .
+
+Dostępne ruchy:
+
+- Przeniesienie karty z jednej z 7 kolumn na odpowiedni stos w prawym górnym rogu (taki, na którym znajduje się karta tego samego koloru o 1 niższa lub pusty stos, gdy przenoszoną kartą jest as).
+
+- Przeniesienie karty na inną kolumnę, jeśli odkryta karta na szczycie docelowej kolumny ma przeciwny kolor i jest o 1 niższa w hierarchii).
+
+- Przeniesienie karty ze stosu w lewym górnym rogu lub jednego ze stosów w prawym górnym rogu na jedną z kolumn zgonie z zasadami z poprzedniego punktu.
+
+- Odkrycie karty z zakrytego stosu w lewym górnym rogu.

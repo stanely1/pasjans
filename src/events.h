@@ -37,6 +37,7 @@ void card_release(GtkWidget *widget, GdkEventButton *event, gpointer data);
 gboolean timer_update(int *seconds);
 void moves_add();
 
+void rules_dialog_init(GtkWidget *widget, gpointer data);
 void preferences_dialog_init(GtkWidget *widget, gpointer data);
 void stats_dialog_init(GtkWidget *widget, gpointer data);
 void save_stats();
@@ -534,4 +535,49 @@ void save_stats()
         fwrite(stat_value,sizeof(stat_value),1,stats_tmp_file);
         fclose(stats_tmp_file);
 }
+
+// rules
+void text_file_read(char *filename, char **dest)
+{
+    FILE *file = fopen(filename,"r");
+    fseek(file,0,2);
+    int file_size = ftell(file);
+    rewind(file);
+
+    *dest = calloc(file_size+1,sizeof(char));
+    fread(*dest,sizeof(char),file_size,file);
+    fclose(file);
+}
+
+void rules_dialog_init(GtkWidget *widget, gpointer data)
+{
+    GtkWidget *rules_dialog = gtk_dialog_new_with_buttons("Zasady",GTK_WINDOW(main_window),
+    GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,"Zamknij",GTK_RESPONSE_CLOSE,NULL);
+    g_signal_connect(G_OBJECT(rules_dialog),"response",G_CALLBACK(gtk_widget_destroy),NULL);
+
+    gtk_widget_set_size_request(rules_dialog,400,500);
+    gtk_window_set_resizable(GTK_WINDOW(rules_dialog),FALSE);
+    g_object_set(gtk_dialog_get_action_area(GTK_DIALOG(rules_dialog)),"halign",GTK_ALIGN_CENTER,NULL);
+
+    GtkTextBuffer *rules_text_buffer = gtk_text_buffer_new(NULL);
+    GtkWidget *rules_text_view = gtk_text_view_new_with_buffer(rules_text_buffer);
+    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(rules_text_view),GTK_WRAP_WORD);
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(rules_text_view),FALSE);
+    gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(rules_text_view),FALSE);
+
+    char *rules_text;
+    text_file_read("data/rules",&rules_text);
+    gtk_text_buffer_set_text(rules_text_buffer,rules_text,strlen(rules_text));
+
+    GtkWidget *rules_scrolled_window = gtk_scrolled_window_new(NULL,NULL);
+    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW(rules_scrolled_window),GTK_POLICY_AUTOMATIC,GTK_POLICY_AUTOMATIC);
+    gtk_container_add(GTK_CONTAINER(rules_scrolled_window),rules_text_view);
+    gtk_container_set_border_width(GTK_CONTAINER(rules_text_view),20);
+
+    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(rules_dialog))),rules_scrolled_window,TRUE,TRUE,0);
+
+    gtk_widget_show_all(rules_dialog);
+    gtk_dialog_run(GTK_DIALOG(rules_dialog));
+}
+
 #endif

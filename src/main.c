@@ -145,6 +145,7 @@ void main_window_init()
     gtk_menu_shell_append(GTK_MENU_SHELL(menubar),new_game_menu_item);
 
     GtkWidget *rules_menu_item = gtk_menu_item_new_with_label("Zasady");
+    g_signal_connect(G_OBJECT(rules_menu_item),"activate",G_CALLBACK(rules_dialog_init),NULL);
     gtk_menu_shell_append(GTK_MENU_SHELL(menubar),rules_menu_item);
 
     GtkWidget *preferences_menu_item = gtk_menu_item_new_with_label("Preferencje");
@@ -201,6 +202,7 @@ void main_window_init()
 
     //kupka do dobierania
     covered_stack_base = gtk_event_box_new();
+    gtk_container_add(GTK_CONTAINER(covered_stack_base),gtk_image_new_from_pixbuf(gdk_pixbuf_new_from_file_at_scale("images/reset_stack.svg",CARD_WIDTH/2,CARD_WIDTH/2,TRUE,NULL)));
     gtk_widget_set_size_request(covered_stack_base,CARD_WIDTH,CARD_HEIGHT);
     g_signal_connect(G_OBJECT(covered_stack_base),"button-press-event",G_CALLBACK(covered_base_click),NULL);
     gtk_fixed_put(GTK_FIXED(main_fixed),covered_stack_base,0,0);
