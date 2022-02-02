@@ -4,7 +4,6 @@
 #include "cards.h"
 #include "events.h"
 #include "stack.h"
-#include "widgets.h"
 
 void swap(Card *x, Card *y)
 {
